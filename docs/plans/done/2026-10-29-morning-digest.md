@@ -1,8 +1,9 @@
 ---
 plan: morning-digest
-status: ready
+status: done
 owner: rook
 opened: 2026-10-29
+closed: 2026-10-29
 ---
 
 # Morning digest
@@ -77,3 +78,19 @@ page again with `LANE_MARKER` unset (the banner reads "no marker set") and uploa
 link. Move this plan to `docs/plans/done/` with its issue list.
 
 Done when: the preview link no longer shows the lane marker.
+
+## Issues
+
+| # | Issue | Blocked by | Worker | Closed |
+|---|-------|-----------|--------|--------|
+| 1 | [Run log reader and shared digest contract](https://github.com/piotrpataj/rig-handover-s01e04/issues/1) | — | codex · GPT-6.1 Sol · high | 2026-10-29 |
+| 2 | [Digest HTML page](https://github.com/piotrpataj/rig-handover-s01e04/issues/2) | #1 | claude-code · Claude Haiku5.5 · medium | 2026-10-29 |
+| 3 | [Digest JSON API](https://github.com/piotrpataj/rig-handover-s01e04/issues/3) | #1 | GitHub Copilot · GPT-5.3-Codex · medium | 2026-10-29 |
+| 4 | [Status board links and event counts](https://github.com/piotrpataj/rig-handover-s01e04/issues/4) | #1 | claude-code · Claude Haiku5.5 · medium | 2026-10-29 |
+| 5 | [Digest route tests and parity](https://github.com/piotrpataj/rig-handover-s01e04/issues/5) | #1 | GitHub Copilot · GPT-5.3-Codex · medium | 2026-10-29 |
+| 6 | [Preview for review](https://github.com/piotrpataj/rig-handover-s01e04/issues/6) | #2 | GitHub Copilot · GPT-5.3-Codex · medium | 2026-10-29 |
+| 7 | [Cleanup and plan archive](https://github.com/piotrpataj/rig-handover-s01e04/issues/7) | #6 | GitHub Copilot · GPT-5.3-Codex · medium | 2026-10-29 |
+
+Issue #6 completed after reviewer-confirmed page review. Issue #7 completed after review and
+human-approved replacement of the same public preview URL with the clean copy ("no marker set").
+Public preview verification is operational evidence only; course acceptance is separate.
