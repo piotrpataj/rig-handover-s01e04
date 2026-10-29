@@ -69,7 +69,7 @@ jobs:
           else
             export LANE_MARKER="$SECRET_LANE_MARKER"
           fi
-          export LANE_ID="preview"
+          export LANE_ID="lane-07"
           export PORT="8787"
 
           pnpm start >"$RUNNER_TEMP/preview-server.log" 2>&1 &
