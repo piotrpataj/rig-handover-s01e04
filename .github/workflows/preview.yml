@@ -1,0 +1,131 @@
+name: Preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      clean:
+        description: Export preview without lane marker
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.11.0
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test
+        run: pnpm test
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Export digest HTML
+        shell: bash
+        env:
+          CLEAN_MODE: ${{ inputs.clean }}
+          SECRET_LANE_MARKER: ${{ secrets.LANE_MARKER }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$CLEAN_MODE" != "true" && -z "$SECRET_LANE_MARKER" ]]; then
+            echo "Required secret LANE_MARKER is missing for non-clean export." >&2
+            exit 1
+          fi
+
+          SITE_DIR="$RUNNER_TEMP/site"
+          OUTPUT_FILE="$SITE_DIR/index.html"
+          mkdir -p "$SITE_DIR"
+
+          if [[ "$CLEAN_MODE" == "true" ]]; then
+            export LANE_MARKER=""
+          else
+            export LANE_MARKER="$SECRET_LANE_MARKER"
+          fi
+          export LANE_ID="preview"
+          export PORT="8787"
+
+          pnpm start >"$RUNNER_TEMP/preview-server.log" 2>&1 &
+          SERVER_PID=$!
+          cleanup() {
+            kill "$SERVER_PID" 2>/dev/null || true
+            wait "$SERVER_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 1 \
+            "http://127.0.0.1:8787/digest/2026-10-28" \
+            --output "$OUTPUT_FILE"
+
+          EXPORT_FILE="$OUTPUT_FILE" node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+
+          const html = readFileSync(process.env.EXPORT_FILE, 'utf8');
+          const cleanMode = process.env.CLEAN_MODE === 'true';
+          const marker = process.env.LANE_MARKER ?? '';
+          const textOnly = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+          if (/<script\b/i.test(html)) {
+            console.error('Unexpected script tag found in export.');
+            process.exit(1);
+          }
+
+          if (!html.includes('<table') || !html.includes('<tr')) {
+            console.error('Expected table data is missing in export.');
+            process.exit(1);
+          }
+
+          if (textOnly.length < 40) {
+            console.error('Export appears empty.');
+            process.exit(1);
+          }
+
+          if (cleanMode) {
+            if (!html.includes('no marker set')) {
+              console.error('Clean export must show "no marker set".');
+              process.exit(1);
+            }
+          } else {
+            if (!marker || !html.includes(marker)) {
+              console.error('Non-clean export must include lane marker from secret.');
+              process.exit(1);
+            }
+          }
+          NODE
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/site
+          retention-days: 1
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
